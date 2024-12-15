@@ -1,15 +1,13 @@
 {
-  "name": "libmodlib.so",
-  "author": "author's name",
-  "displayName": "Demo mod",
-  "description": "this is a simple demo mod for sml",
+  "name": "libskygenai.so",
+  "author": "gxost",
+  "displayName": "Sky-GenAI",
+  "description": "GenAI in Sky chat",
   "majorVersion": 1,
   "minorVersion": 0,
   "patchVersion": 0,
   "displaysUI": true,
-  "selfManagedUI": false,
+  "selfManagedUI": true,
   "githubReleasesUrl": "",
-  "dependencies": [
-
-  ]
+  "dependencies": []
 }

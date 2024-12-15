@@ -64,7 +64,7 @@ set(CMAKE_LINKER_FLAGS "$CMAKE_LINKER_FLAGS -L${SYSROOT}/usr/lib/${ANDROID_ARCH}
 
 #####################################################
 
-project("userlib")
+project("genai-userlib")
 
 file(READ ${CMAKE_HOME_DIRECTORY}/config.json MY_JSON_STRING) #reads soname from config
 string(JSON CUR_NAME GET ${MY_JSON_STRING} name)
@@ -79,6 +79,9 @@ string(JSON LIB_PATCH_VERSION GET ${MY_JSON_STRING} patchVersion)
 set(LIB_VERSION ${LIB_MAJOR_VERSION}.${LIB_MINOR_VERSION}.${LIB_PATCH_VERSION})
 set(RENAMED_CUR_NAME lib${CUR_NAME}-${LIB_VERSION}.so)
 add_compile_definitions(__LIB_VERSION__="${LIB_VERSION}") # You can use lib_version inside your sources
+add_compile_definitions(__GENAI_API_KEY__="${GENAI_API_KEY}")
+
+add_subdirectory(genai)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 link_directories(${CMAKE_SOURCE_DIR}/lib)
@@ -87,12 +90,16 @@ add_library( # Sets the name of the library.
 	${CUR_NAME}
 	SHARED
 	main.cpp
+	sky_genai/mod.cxx
+
+	${genai_INCLUDE_DIRS}
 )
 
 target_link_libraries(
 	${CUR_NAME}
 	ciphered
 	log
+	genai
 )
 
 add_custom_command(
