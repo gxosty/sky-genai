@@ -11,7 +11,7 @@ void initialize(
     const genai::GenerationConfig& generation_config = genai::GenerationConfig{}
 );
 
-void start_new_session();
+void start_new_session(const std::string& api_key);
 
 void kill_session();
 

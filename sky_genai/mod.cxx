@@ -11,6 +11,8 @@
 #include <thread>
 
 #include <Cipher/Cipher.h>
+#include <Cipher/CipherUtils.h>
+
 #define SETUP_HOOK(_func, func_addr) \
     (new CipherHook()) \
     ->set_Hook((uintptr_t)my##_func) \
@@ -27,7 +29,7 @@ std::string _system_instruction;
 genai::GenerationConfig _generation_config;
 
 genai::GenAI* _g = nullptr;
-std::unique_ptr<genai::Chat> _chat;
+genai::Chat* _chat = nullptr;
 
 // Mod related
 std::string _error_message;
@@ -70,10 +72,22 @@ HOOK_DEF(uint64_t, _chat_add_chat_message, uintptr_t _this, char* text, uint8_t*
 
 void _ai_chat_send(const std::string& message)
 {
-    static const uintptr_t chat_send_ptr = Cipher::get_libBase() + 0xF0537C;
-    auto chat_send_message = ((void(*)(void* _this, const char* text, char a3, char a4))chat_send_ptr);
+    static const uintptr_t chat_send_ptr = \
+    CipherUtils::CipherScanPattern(
+        // 0.27.5 | E9 03 17 D1 3F E9 7B 92 08 96 9A 52 F6 03 00 AA 18 00 08 8B
+        // 0.27.6 | E9 03 17 D1 3F E9 7B 92 08 96 9A 52 F6 03 00 AA 18 00 08 8B
+        "E9 03 17 D1 3F E9 7B 92 08 96 9A 52 F6 03 00 AA 18 00 08 8B",
+        Flags::ReadAndExecute
+    );
 
-    chat_send_message(_chat_instance, ("Z: " + message).c_str(), 1, 1);
+    // 0.27.5
+    // static const uintptr_t chat_send_ptr = Cipher::get_libBase() + 0xF0537C;
+
+    if (chat_send_ptr)
+    {
+        auto chat_send_message = ((void(*)(void* _this, const char* text, char a3, char a4))(chat_send_ptr - 0x1C));
+        chat_send_message(_chat_instance, ("Z: " + message).c_str(), 1, 1);
+    }
 }
 
 void _process_message(MessageInfo* info)
@@ -83,6 +97,11 @@ void _process_message(MessageInfo* info)
     LOGI("Message from %s", message.c_str());
 
     message = _chat->send_message(message);
+
+    if (message.empty())
+    {
+        throw std::runtime_error("response is empty");
+    }
 
     if (message.back() == '\n')
     {
@@ -135,8 +154,8 @@ void _ai_loop()
                 }
                 catch (const std::exception& err)
                 {
-                    LOGE("_process_message error: %s", err.what());
                     _error_message = "_process_message error: " + std::string(err.what());
+                    LOGE("_process_message error: %s", err.what());
                 }
             }
         }
@@ -145,7 +164,20 @@ void _ai_loop()
 
 void _apply_hooks()
 {
-    SETUP_HOOK(_chat_add_chat_message, Cipher::get_libBase() + 0xF09A7C);
+
+    const uintptr_t chat_add_message_ptr = \
+    CipherUtils::CipherScanPattern(
+        // 0.27.5 | E9 03 27 D1 3F E9 7B 92 49 28 40 A9 08 A7 00 90 F7 03 04 AA
+        // 0.27.6 | E9 03 27 D1 3F E9 7B 92 49 28 40 A9 08 A7 00 90 F7 03 04 AA
+        "E9 03 27 D1 3F E9 7B 92 49 28 40 A9 08 A7 00 90 F7 03 04 AA",
+        Flags::ReadAndExecute
+    );
+
+    // 0.27.5
+    // SETUP_HOOK(_chat_add_chat_message, Cipher::get_libBase() + 0xF09A7C);
+
+    if (chat_add_message_ptr)
+        SETUP_HOOK(_chat_add_chat_message, chat_add_message_ptr - 0x1C);
 }
 
 void initialize(
@@ -161,14 +193,21 @@ void initialize(
     _apply_hooks();
 }
 
-void start_new_session()
+void start_new_session(const std::string& api_key)
 {
     if (_g)
     {
+        _error_message = "Session has already been started";
         throw std::runtime_error("Session has already been started");
     }
 
-    _g = new genai::GenAI("gemini-1.5-flash-8b", __GENAI_API_KEY__);
+    if (api_key.empty())
+    {
+        _error_message = "API Key is empty";
+        throw std::runtime_error("API Key is empty");
+    }
+
+    _g = new genai::GenAI("gemini-1.5-flash-8b", api_key);
     _g->set_system_instruction(_system_instruction);
     _g->set_generation_config(_generation_config);
 
@@ -182,12 +221,11 @@ void kill_session()
         throw std::runtime_error("No session is running");
     }
 
+    delete _chat;
+    _chat = nullptr;
+
     delete _g;
     _g = nullptr;
-
-    genai::Chat* chat = _chat.get();
-    _chat.release();
-    delete chat;
 }
 
 bool is_alive()

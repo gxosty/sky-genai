@@ -6,6 +6,7 @@
 #include "include/imgui/imgui.h"
 
 #include "sky_genai/mod.hpp"
+#include "sky_genai/savedata.hpp"
 
 #define GENAI_SYSTEM_INSTRUCTION \
 R"(You are Zephyr Clockwork. Zephyr is your name, Clockwork is your surname (Steam punk style name).
@@ -26,6 +27,9 @@ You MUST NEVER include their player ids in your messages no matter what, even if
 
 Goodluck!)"
 
+// Globals (YES!)
+mod::SaveData g_save_data;
+
 // UI related functions
 void Menu(bool *_pOpen)  // _pOpen is passed by canvas. Used to close and open the mod locally
 {
@@ -36,10 +40,53 @@ void Menu(bool *_pOpen)  // _pOpen is passed by canvas. Used to close and open t
         if (!mod::get_error_message().empty())
             ImGui::Text("Last Error: %s", mod::get_error_message().c_str());
 
-        if (ImGui::Button("Restart"))
+        if (ImGui::Button(mod::is_alive() ? "Restart" : "Start"))
+        {
+            if (mod::is_alive())
+                mod::kill_session();
+
+            try {
+                mod::start_new_session(
+                    std::string(
+                        g_save_data.api_token,
+                        g_save_data.api_token_size
+                    )
+                );
+            } catch (const std::exception& _) { /* Do Nothing */ }
+        }
+
+        if (mod::is_alive() && ImGui::Button("Stop"))
         {
             mod::kill_session();
-            mod::start_new_session();
+        }
+
+        const char* clipboard_text = ImGui::GetClipboardText();
+        auto clipboard_text_size = strlen(clipboard_text);
+
+        if ((clipboard_text_size < 30) || (clipboard_text_size > 50))
+        {
+            ImGui::TextWrapped("Please copy API key to clipboard then click on \"Save API key\" that will appear, then click on \"Start/Restart\"");
+        }
+        else
+        {
+            ImGui::TextWrapped("Possible API key copied: ...%s (hidden for security reasons)", clipboard_text + 25);
+
+            if (ImGui::Button("Save API key"))
+            {
+                memcpy((char*)g_save_data.api_token, clipboard_text, clipboard_text_size);
+                g_save_data.api_token[clipboard_text_size] = 0;
+                g_save_data.api_token_size = clipboard_text_size;
+                g_save_data.save();
+            }
+        }
+
+        if (g_save_data.api_token_size)
+        {
+            if (ImGui::Button("Clear API key"))
+            {
+                g_save_data.clear();
+                g_save_data.save();
+            }
         }
     }
     ImGui::End();
@@ -47,12 +94,6 @@ void Menu(bool *_pOpen)  // _pOpen is passed by canvas. Used to close and open t
 
 // Called in a later stage of game initialisation
 void InitLate()
-{
-
-}
-
-// Called at the start of the game
-void Init()
 {
     mod::initialize(
         GENAI_SYSTEM_INSTRUCTION,
@@ -64,5 +105,10 @@ void Init()
             "text/plain"
         }
     );
-    mod::start_new_session();
+}
+
+// Called at the start of the game
+void Init()
+{
+    g_save_data.load();
 }
