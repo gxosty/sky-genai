@@ -103,7 +103,7 @@ void _process_message(MessageInfo* info)
         throw std::runtime_error("response is empty");
     }
 
-    if (message.back() == '\n')
+    while (message.back() == '\n')
     {
         message.pop_back();
     }
@@ -169,12 +169,10 @@ void _apply_hooks()
     CipherUtils::CipherScanPattern(
         // 0.27.5 | E9 03 27 D1 3F E9 7B 92 49 28 40 A9 08 A7 00 90 F7 03 04 AA
         // 0.27.6 | E9 03 27 D1 3F E9 7B 92 49 28 40 A9 08 A7 00 90 F7 03 04 AA
-        "E9 03 27 D1 3F E9 7B 92 49 28 40 A9 08 A7 00 90 F7 03 04 AA",
+        // 0.28.0 | E9 03 27 D1 3F E9 7B 92 49 28 40 A9 E8 A9 00 D0 F7 03 04 AA
+        "E9 03 27 D1 3F E9 7B 92 49 28 40 A9 ?? ?? 00 ?? F7 03 04 AA"
         Flags::ReadAndExecute
     );
-
-    // 0.27.5
-    // SETUP_HOOK(_chat_add_chat_message, Cipher::get_libBase() + 0xF09A7C);
 
     if (chat_add_message_ptr)
         SETUP_HOOK(_chat_add_chat_message, chat_add_message_ptr - 0x1C);
@@ -207,7 +205,7 @@ void start_new_session(const std::string& api_key)
         throw std::runtime_error("API Key is empty");
     }
 
-    _g = new genai::GenAI("gemini-1.5-flash-8b", api_key);
+    _g = new genai::GenAI("gemini-1.5-pro", api_key);
     _g->set_system_instruction(_system_instruction);
     _g->set_generation_config(_generation_config);
 
