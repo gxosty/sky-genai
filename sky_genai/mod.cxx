@@ -76,7 +76,7 @@ void _ai_chat_send(const std::string& message)
     CipherUtils::CipherScanPattern(
         // 0.27.5 | E9 03 17 D1 3F E9 7B 92 08 96 9A 52 F6 03 00 AA 18 00 08 8B
         // 0.27.6 | E9 03 17 D1 3F E9 7B 92 08 96 9A 52 F6 03 00 AA 18 00 08 8B
-        "E9 03 17 D1 3F E9 7B 92 08 96 9A 52 F6 03 00 AA 18 00 08 8B",
+        "E9 ?? 17 D1 3F E9 7B 92 08 ?? 9A 52 ?? 03 00 AA 18 00 08 8B",
         Flags::ReadAndExecute
     );
 

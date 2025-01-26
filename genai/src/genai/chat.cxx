@@ -9,13 +9,13 @@
 namespace genai
 {
 
-Chat::Chat(std::weak_ptr<GenAI> g) : _g(g) {}
+Chat::Chat(GenAI* g) : _g(g) {}
 
 std::string Chat::send_message(const std::string& message)
 {
     _push_into_chat(message, ContentItem::Role::User);
 
-    if (auto g = _g.lock())
+    if (auto g = _g)
     {
         std::string response_message;
 
