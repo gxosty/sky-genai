@@ -1,11 +1,13 @@
 #pragma once
 
 #include "common.hpp"
+#include "exceptions.hpp"
 #include "chat.hpp"
 #include "generation_config.hpp"
 
 #include <curl/curl.h>
 
+#include <memory>
 #include <string>
 
 namespace genai
@@ -23,7 +25,7 @@ public:
     ~GenAI();
 
     std::string generate_content(const std::string& text);
-    Chat* start_chat();
+    Chat start_chat();
 
     void set_system_instruction(const std::string& instruction);
     const std::string& get_system_instruction() const;
@@ -44,6 +46,8 @@ private:
     std::string _api_key;
 
 private:
+    std::shared_ptr<GenAI> _self;
+
     CURL* _curl;
     curl_slist* _headers;
 

@@ -31,6 +31,8 @@ GenAI::GenAI(
     curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, &write_function);
     curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYHOST, 0L);
     curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYPEER, 0L);
+
+    _self = std::shared_ptr<GenAI>(this);
 }
 
 GenAI::~GenAI()
@@ -73,9 +75,9 @@ std::string GenAI::generate_content(const std::string& text)
     return json_data["candidates"][0]["content"]["parts"][0]["text"].get<std::string>();
 }
 
-Chat* GenAI::start_chat()
+Chat GenAI::start_chat()
 {
-    return new Chat(this);
+    return Chat(_self);
 }
 
 void GenAI::set_system_instruction(const std::string& instruction)

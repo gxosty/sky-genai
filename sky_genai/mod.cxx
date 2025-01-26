@@ -152,6 +152,11 @@ void _ai_loop()
                 try {
                     _process_message(info);
                 }
+                catch (const genai::GenAIError& err)
+                {
+                    _error_message = "GenAI error: " + err.what();
+                    LOGE("GenAI error: %s", err.what().c_str());
+                }
                 catch (const std::exception& err)
                 {
                     _error_message = "_process_message error: " + std::string(err.what());
@@ -205,7 +210,7 @@ void start_new_session(const std::string& api_key)
         throw std::runtime_error("API Key is empty");
     }
 
-    _g = new genai::GenAI("gemini-1.5-pro", api_key);
+    _g = new genai::GenAI("gemini-1.5-flash", api_key);
     _g->set_system_instruction(_system_instruction);
     _g->set_generation_config(_generation_config);
 
