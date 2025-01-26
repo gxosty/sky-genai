@@ -5,7 +5,7 @@
   "description": "GenAI in Sky chat",
   "majorVersion": 1,
   "minorVersion": 0,
-  "patchVersion": 0,
+  "patchVersion": 1,
   "displaysUI": true,
   "selfManagedUI": true,
   "githubReleasesUrl": "",
